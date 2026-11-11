@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import logo from '../assets/AquaBest logo.png';
-import { DEMO_BUSINESS_ACCOUNTS } from '../services/demoBusinessAuth.js';
 import './businessLogin.css';
 
-// Presentation only. Authentication still uses the existing frontend demo adapter.
-export default function BusinessLogin({ onLogin }) {
-  const [username, setUsername] = useState('');
+export default function BusinessLogin({ onLogin, initialError = '' }) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [recovering, setRecovering] = useState(false);
-  const [error, setError] = useState('');
-  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
+  const [error, setError] = useState(initialError);
+  const [busy, setBusy] = useState(false);
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     setError('');
-    if (!username.trim() || !password) {
-      setError('Enter your username and password to continue.');
+    if (!email.trim() || !password) {
+      setError('Enter your work email and password to continue.');
       return;
     }
-    if (!onLogin(username, password)) {
-      setError('Incorrect username or password. Check your details and try again.');
+    setBusy(true);
+    try {
+      await onLogin(email, password);
+    } catch (loginError) {
+      setError(loginError.message || 'Sign-in failed. Please try again.');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -56,7 +59,7 @@ export default function BusinessLogin({ onLogin }) {
                 </div>
                 <div className="business-auth-help">
                   <strong>How to regain access</strong>
-                  <p>Contact your Owner / Admin to request an account reset. Online password recovery is unavailable in this temporary demo.</p>
+                  <p>Contact your Owner / Admin to reset your password or restore access.</p>
                 </div>
                 <button type="button" className="business-auth-button" onClick={() => { setRecovering(false); setError(''); }}>Back to sign in</button>
               </>
@@ -68,9 +71,9 @@ export default function BusinessLogin({ onLogin }) {
                   <p>Enter your employee credentials to continue.</p>
                 </div>
                 <form noValidate onSubmit={submit}>
-                  <label htmlFor="business-username">Username</label>
+                  <label htmlFor="business-email">Work email</label>
                   <div className="business-auth-input">
-                    <input id="business-username" type="text" autoComplete="username" placeholder="Enter your username" value={username} onChange={e => { setUsername(e.target.value); setError(''); }} required />
+                    <input id="business-email" type="email" autoComplete="username" inputMode="email" placeholder="name@aquabest.com" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} required />
                   </div>
                   <div className="business-auth-password-label">
                     <label htmlFor="business-password">Password</label>
@@ -81,29 +84,13 @@ export default function BusinessLogin({ onLogin }) {
                     <button type="button" className="business-auth-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(v => !v)}>{showPassword ? 'Hide' : 'Show'}</button>
                   </div>
                   {error && <p className="business-auth-error" role="alert">{error}</p>}
-                  <button className="business-auth-button" type="submit">Sign in</button>
+                  <button className="business-auth-button" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
                 </form>
               </>
             )}
-            <div className="business-auth-demo">
-              <strong>Temporary demo login</strong>
-              <p>Frontend preview only. These accounts do not authenticate with the real backend or protect business data.</p>
-              {!recovering && (
-                <>
-                  <button type="button" className="business-auth-demo-toggle" aria-expanded={showDemoAccounts} onClick={() => setShowDemoAccounts(v => !v)}>
-                    {showDemoAccounts ? 'Hide demo accounts' : 'View demo accounts'}
-                  </button>
-                  {showDemoAccounts && (
-                    <div className="business-auth-demo-accounts">
-                      {DEMO_BUSINESS_ACCOUNTS.map(a => (
-                        <button key={a.username} type="button" onClick={() => { setUsername(a.username); setPassword(a.password); setError(''); }}>
-                          <span>{a.label}</span><code>{a.username} / {a.password}</code>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+            <div className="business-auth-account-help">
+              <strong>Staff account access</strong>
+              <p>Accounts are created by an authorized AquaBest administrator. Contact the administrator if you need access or a password reset.</p>
             </div>
           </div>
           <div className="business-auth-bottom">For AquaBest personnel <span aria-hidden="true">·</span> <a href={import.meta.env.BASE_URL}>Customer website</a></div>

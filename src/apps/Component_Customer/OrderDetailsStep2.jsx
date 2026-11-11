@@ -28,7 +28,7 @@ export default function OrderDetailsStep2({ draft, updateDraft, onBack, onNext, 
         <input id="recipient" className="form-control" value={details.name} onChange={change('name')} required maxLength={80} autoComplete="name" placeholder="Full name" />
         <label htmlFor="phone"><FiPhone /> Phone number</label>
         <input id="phone" className="form-control" type="tel" value={verifiedPhone || details.phone} readOnly aria-readonly="true" />
-        <small className="panel-hint">Phone is automatically filled from the onboarding step. Real verification requires Supabase Auth integration.</small>
+        <small className="panel-hint">Phone is filled in from your profile.</small>
       </div>
 
       <div className="order-panel">

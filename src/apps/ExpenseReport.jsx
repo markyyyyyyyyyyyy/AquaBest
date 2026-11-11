@@ -20,7 +20,7 @@ export default function ExpenseReport({expenses,setExpenses,onEvent}){
   <div className="mgmt-section-title"><h2>Expenses</h2><button className="mgmt-link" onClick={()=>{setEditing(null);setOpen(!open)}}><FiPlus/> {open?'Close':'Add Expense'}</button></div>
   <div className="mgmt-card">
    <div className="mgmt-row"><strong>Recorded Expenses</strong><strong>{formatMoney(total)}</strong></div>
-   <p className="mgmt-sub">Fuel, utilities, supplies and other station expenses. Entries are demo-only and included in reporting, not counted as sales.</p>
+   <p className="mgmt-sub">Fuel, utilities, supplies and other station expenses. Entries are browser-only and included in reporting, not counted as sales.</p>
    {open&&<div className="owner-form" style={{marginTop:14}}>
     <div className="mgmt-formgrid">
      <div className="mgmt-field"><label>Category</label><select value={form.category} onChange={e=>change('category',e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -33,7 +33,7 @@ export default function ExpenseReport({expenses,setExpenses,onEvent}){
    {expenses.length?expenses.map(e=><div className="mgmt-row" key={e.id}>
     <div><strong className="mgmt-row-title">{e.description}</strong><p className="mgmt-sub">{e.category} · {e.date} · {e.active?'Recorded':'Voided'}</p></div>
     <div className="owner-row-actions"><strong>{formatMoney(e.amount)}</strong>{e.active&&<><button className="mgmt-link" onClick={()=>edit(e)} aria-label={'Edit '+e.description}><FiEdit2/></button><button className="mgmt-link" onClick={()=>{setExpenses(old=>old.map(x=>x.id===e.id?{...x,active:false}:x));onEvent('Voided expense: '+e.description)}}>Void</button></>}</div>
-   </div>):<div className="owner-empty"><FiFileText/><p>No expenses recorded in this demo session.</p></div>}
+   </div>):<div className="owner-empty"><FiFileText/><p>No expenses recorded yet.</p></div>}
   </div>
  </section>;
 }

@@ -43,4 +43,46 @@ Agree on:
 - Payments with an e-wallet/bank reference are **pending verification** until validated; cash collected is distinct from confirmed cash remittance.
 - Attendance is not derived from online/offline availability.
 - Real inventory must be based on physical bottle release/return, with no duplicate stock-out from a status edit.
-- Existing UI demos remain public and their contents are fake.
+- Operational screens still contain sample data and are not database-backed.
+
+## Staff authentication (Supabase)
+
+The business login uses Supabase Auth email/password credentials. Passwords are managed by Supabase Auth and are never stored in `public.employees` or in the frontend. `public.employees` maps an Auth user ID to an administrator-assigned role and active status. The browser reads only the signed-in user's own employee row through RLS.
+
+### One-time project setup
+
+1. In the Supabase Dashboard, enable the Email provider and disable public sign-ups. Staff accounts must be created or invited by an authorized administrator.
+2. Run [`schema/business-auth-supabase.sql`](schema/business-auth-supabase.sql) in the Supabase SQL Editor.
+3. Keep `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the local `.env` file. For GitHub Pages, add repository Actions variables with those exact names so the deployment build can embed the Supabase URL and anon/publishable key. The anon/publishable key is intended for browser use; database access must be restricted with RLS. Never put a `service_role` or secret key in a `VITE_` variable or frontend file.
+4. Create each employee's Auth user from the Supabase Dashboard. Then link that Auth user to a role using trusted SQL, replacing the sample values:
+
+   ```sql
+   insert into public.employees (auth_user_id, full_name, primary_role, active)
+   select id, 'Employee Name', 'staff', true
+   from auth.users
+   where lower(email) = lower('employee@example.com')
+   on conflict (auth_user_id) do update
+   set full_name = excluded.full_name,
+       primary_role = excluded.primary_role,
+       active = excluded.active;
+   ```
+
+   Allowed roles are `owner`, `manager`, `staff`, and `delivery`. Never let the employee client insert or update these role records.
+
+The login route is `?view=business-login`; successful sign-in opens `?view=business`. Legacy role values in the URL do not assign roles. The application derives the role from the RLS-protected employee row.
+
+### Optional test accounts
+
+After applying the migration, copy `.env.admin.example` to `.env.admin`. Set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the project's URL and the **legacy `service_role` JWT** from Supabase Settings → API Keys → Legacy API Keys. This Auth Admin seeder requires a JWT bearer token; the anon/publishable key and new `sb_secret_` API key are not valid for this script's bearer-token call. Keep `.env.admin` private; it is ignored by Git. Run `node scripts/create-test-business-accounts.mjs` from the project root. It creates one confirmed test Auth user per role, links each to `public.employees`, and prints unique generated passwords once. It aborts if any reserved test email already exists. The addresses use `example.com`, so they cannot receive email or password-reset messages. Delete these users from Supabase Auth when testing is finished. Never use this script for real worker accounts.
+
+### Security boundary
+
+This change secures sign-in and employee identity/role lookup. The management screens still contain local sample orders, prices, stock, and activity; they are not database-backed yet. Do not treat the current UI route guard as authorization for operational data. Before connecting business tables, enable RLS on each table and add role-specific policies or server-side RPCs for every read/write. Never ship the Supabase service-role key to the browser.
+
+## Shared products catalog
+
+Run `schema/products-catalog-supabase.sql` in Supabase SQL Editor after `schema/business-auth-supabase.sql`. It creates/updates the products table policies and public image bucket. Only an authenticated, active `owner` employee can create or edit products. Customers can read only active products whose `channels` include `online`; they do not receive permission to change the catalog. The browser uses only the public anon key and relies on RLS.
+
+In the Owner workspace, open **Products & Services** to add or edit a product, set its price and channels, and optionally upload an image. Saving writes the product and image to Supabase. Products marked active and available online appear on the customer home page and in the order size selector. Products marked inactive or Walk-in Only are hidden from online customers. Refresh the customer page after a catalog update to load the latest list.
+
+The online customer order submission flow remains a local preview. This catalog connection does not persist customer orders or decrement inventory.

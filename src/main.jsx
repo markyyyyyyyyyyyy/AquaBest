@@ -1,32 +1,74 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import CustomerWeb from './apps/CustomerWeb.jsx';
 import ManagementWeb from './apps/ManagementWeb.jsx';
 import BusinessLogin from './apps/BusinessLogin.jsx';
-import { getDemoBusinessSession, loginDemoBusiness, logoutDemoBusiness } from './services/demoBusinessAuth.js';
+import { getBusinessSession, signInBusiness, signOutBusiness } from './services/businessAuth.js';
 
-// Business roles share one sign-in. Legacy ?view=role URLs cannot grant a role.
-// This is frontend demonstration only, NOT production authorization.
-const view = new URLSearchParams(window.location.search).get('view');
-const businessViews = ['business', 'login', 'manager', 'staff', 'delivery', 'owner'];
+// Roles are loaded from the protected employee record, never granted by the URL.
+const businessViews = ['business', 'business-login', 'login', 'manager', 'staff', 'delivery', 'owner'];
+const readView = () => new URLSearchParams(window.location.search).get('view');
+const setViewUrl = (nextView) => {
+  window.history.replaceState({}, '', `${import.meta.env.BASE_URL}?view=${nextView}`);
+};
+
 function App() {
-  const [session, setSession] = useState(getDemoBusinessSession);
-  const signIn = (username, password) => {
-    const next = loginDemoBusiness(username, password);
-    if (!next) return false;
-    setSession(next);
-    window.history.replaceState({}, '', import.meta.env.BASE_URL + '?view=business');
-    return true;
+  const [view, setView] = useState(readView);
+  const isBusinessRoute = businessViews.includes(view);
+  const [session, setSession] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(isBusinessRoute && view !== 'business-login');
+  const [authError, setAuthError] = useState('');
+
+  useEffect(() => {
+    if (!isBusinessRoute || view === 'business-login') {
+      setCheckingSession(false);
+      setSession(null);
+      setAuthError('');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setCheckingSession(true);
+    getBusinessSession()
+      .then((employee) => {
+        if (!cancelled) setSession(employee);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setSession(null);
+          setAuthError(error.message);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingSession(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [isBusinessRoute, view]);
+
+  const signIn = async (email, password) => {
+    const employee = await signInBusiness(email, password);
+    setSession(employee);
+    setAuthError('');
+    setViewUrl('business');
+    setView('business');
   };
-  const signOut = () => {
-    logoutDemoBusiness();
-    setSession(null);
-    window.history.replaceState({}, '', import.meta.env.BASE_URL + '?view=business');
+
+  const signOut = async () => {
+    try {
+      await signOutBusiness();
+    } finally {
+      setSession(null);
+      setAuthError('');
+      setViewUrl('business-login');
+      setView('business-login');
+    }
   };
-  if (!businessViews.includes(view)) return <CustomerWeb />;
-  return session
-    ? <ManagementWeb key={session.role + ':' + session.username} role={session.role} onLogout={signOut} />
-    : <BusinessLogin onLogin={signIn} />;
+
+  if (!isBusinessRoute) return <CustomerWeb />;
+  if (checkingSession) return <main className="business-auth"><p style={{ textAlign: 'center', padding: '48px 16px' }}>Checking staff access…</p></main>;
+  if (view === 'business-login' || !session) return <BusinessLogin onLogin={signIn} initialError={authError} />;
+  return <ManagementWeb key={`${session.role}:${session.authUserId}`} role={session.role} onLogout={signOut} />;
 }
 createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>);

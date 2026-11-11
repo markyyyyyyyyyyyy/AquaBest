@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { RxHamburgerMenu, RxCross2 } from 'react-icons/rx';
-import { FiClipboard } from 'react-icons/fi';
+import { FiClipboard, FiLogOut } from 'react-icons/fi';
 import logo from '../../assets/AquaBest logo.png';
 
-export default function NavBarCustomer({ onHome, onOrder, onOrders, page = 'home' }) {
+export default function NavBarCustomer({ onHome, onOrder, onOrders, onLogout, page = 'home' }) {
   const [isOpen, setIsOpen] = useState(false);
   const go = (action) => { setIsOpen(false); action(); };
   return (
@@ -23,6 +23,7 @@ export default function NavBarCustomer({ onHome, onOrder, onOrders, page = 'home
         <button type="button" onClick={() => go(onHome)}>Home</button>
         <button type="button" onClick={() => go(onOrder)}>Order Water</button>
         <button type="button" onClick={() => go(onOrders)}>My Orders</button>
+        <button type="button" onClick={() => go(onLogout)}><FiLogOut aria-hidden="true" /> Log out</button>
         <a href="tel:09994544981" onClick={() => setIsOpen(false)}>Call AquaBest</a>
       </div>}
     </header>

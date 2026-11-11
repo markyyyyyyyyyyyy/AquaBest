@@ -58,6 +58,6 @@ export default function ManagementNotifications({isStaff,isDelivery=false,trips=
     </article>;
    })}</div>
   }
-  <p className="mgmt-demo"><FiBell/> Demo notifications are derived from local sample orders and stock. Read status resets on refresh; real-time push notifications are not connected.</p>
+  <p className="mgmt-notice"><FiBell/> Working in Progress: notifications use current browser records and read status resets on refresh. Real-time push notifications are not connected.</p>
  </section>;
 }

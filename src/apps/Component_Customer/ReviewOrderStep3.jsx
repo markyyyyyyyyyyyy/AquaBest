@@ -1,7 +1,7 @@
 import { FiArrowLeft, FiCheckCircle, FiClipboard, FiEdit2, FiMapPin, FiTruck } from 'react-icons/fi';
 import { selectedBottles, countBottles, serviceOptions, isDelivery } from './orderData.js';
 
-export default function ReviewOrderStep3({ draft, onBack, onEditWater, onEditDetails, onPreview }) {
+export default function ReviewOrderStep3({ draft, onBack, onEditWater, onEditDetails, onPreview, products = [] }) {
   const total = countBottles(draft.quantities);
   const selectedService = serviceOptions[draft.ownership].find((s) => s.id === draft.service);
   const delivery = isDelivery(draft.service);
@@ -10,7 +10,7 @@ export default function ReviewOrderStep3({ draft, onBack, onEditWater, onEditDet
       <div className="order-page-heading"><span className="order-step-pill">Step 3 of 3</span><h1 id="review-title">Review & Place Order</h1><p>Check the details before preparing your request.</p></div>
       <div className="order-panel">
         <div className="panel-title-row"><h2><FiClipboard /> Order items</h2><button type="button" onClick={onEditWater} className="edit-link"><FiEdit2 /> Edit</button></div>
-        {selectedBottles(draft.quantities).map((item) => <div className="review-item" key={item.id}>
+        {selectedBottles(draft.quantities, products).map((item) => <div className="review-item" key={item.id}>
           <img src={item.image} alt="" /><span><strong>{item.name} · {item.shape}</strong><small>{draft.ownership === 'own' ? 'My own container' : draft.arrangement === 'purchase' ? 'Purchase container + water' : 'Returnable container request'}</small></span><b>× {draft.quantities[item.id]}</b>
         </div>)}
         <div className="review-count">Total containers <strong>{total}</strong></div>

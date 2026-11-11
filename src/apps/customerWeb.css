@@ -16,7 +16,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .cart-count { position: absolute; right: 1px; top: 0; border-radius: 50%; min-width: 18px; height: 18px; padding: 0 3px; display: grid; place-items: center; background: #244ea3; color: #fff; font-size: 10px; font-weight: 700; }
 .customer-menu { max-width: 1200px; margin: auto; padding-bottom: 12px; display: grid; gap: 2px; }
 .customer-menu a, .menu-disabled { padding: 11px 12px; text-decoration: none; border-radius: 9px; color: #1b2f63; font-size: 14px; }
-.customer-menu a:hover { background: #eaf1ff; }
+.customer-menu button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 11px 12px; border: 0; border-radius: 9px; background: transparent; color: #1b2f63; font: inherit; font-size: 14px; text-align: left; }
+.customer-menu a:hover, .customer-menu button:hover { background: #eaf1ff; }
 .menu-disabled { color: #8391a7; }
 .customer-main { max-width: 1150px; margin: 0 auto; padding-top: 40px; padding-bottom: 52px; }
 .hero-banner { position: relative; isolation: isolate; background: #102b72; border-radius: 20px; min-height: 225px; margin-top: 15px; }

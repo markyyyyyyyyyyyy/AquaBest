@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiArrowRight, FiDroplet, FiPackage, FiShield, FiTruck, FiActivity, FiMapPin } from 'react-icons/fi';
 import NavBarCustomer from './Component_Customer/navBarCustomer.jsx';
 import CustomerOnboarding from './Component_Customer/CustomerOnboarding.jsx';
@@ -6,6 +6,10 @@ import OrderWaterStep1 from './Component_Customer/OrderWaterStep1.jsx';
 import OrderDetailsStep2 from './Component_Customer/OrderDetailsStep2.jsx';
 import ReviewOrderStep3 from './Component_Customer/ReviewOrderStep3.jsx';
 import MyOrders from './Component_Customer/MyOrders.jsx';
+import { getSessionUser, signOutCustomer } from '../services/customerAuth.js';
+import { loadMyCustomer } from '../services/customerProfile.js';
+import { loadCustomerProducts } from '../services/productCatalog.js';
+import { orderOptions } from './Component_Customer/orderData.js';
 import sampleData from '../data/sampleData.json';
 import model from '../assets/Model_Imgs/model.png';
 import explainingModel from '../assets/Model_Imgs/ExplainingModel.png';
@@ -17,8 +21,8 @@ import './orderFlow.css';
 import './onboarding.css';
 
 const tips=['Keep drinking water within reach throughout your day.','Wash reusable water bottles regularly.','Store drinking water in clean, covered containers.'];
-const makeDraft = (customer, quantities={round5:0,slim25:0,slim5:0})=>({
-  ownership:'own', arrangement:'purchase', quantities, service:'pickup-return',
+const makeDraft = (customer, quantities={}, products=[])=>({
+  ownership:'own', arrangement:'purchase', quantities:Object.fromEntries(orderOptions(products).map((product)=>[product.id,quantities[product.id]||0])), service:'pickup-return',
   details:{address:customer?.address?.street||'',barangay:customer?.address?.barangay||'',landmark:customer?.address?.landmark||'',name:customer?.fullName||'',phone:customer?.phone||'',date:'',time:'',notes:''},
 });
 export default function CustomerWeb(){
@@ -27,19 +31,47 @@ export default function CustomerWeb(){
   const [step,setStep]=useState(1);
   const [draft,setDraft]=useState(()=>makeDraft(null));
   const [orders,setOrders]=useState(sampleData.orders);
+  const [products,setProducts]=useState([]);
+  const [catalogError,setCatalogError]=useState('');
   const [notice,setNotice]=useState('');
+  const [checking,setChecking]=useState(true);
+  useEffect(()=>{
+    let cancelled=false;
+    loadCustomerProducts().then((available)=>{
+      if(cancelled)return;
+      setProducts(available);
+      setCatalogError('');
+      setDraft((current)=>({...current,quantities:Object.fromEntries(orderOptions(available).map((product)=>[product.id,current.quantities[product.id]||0]))}));
+    }).catch((error)=>{if(!cancelled)setCatalogError(error.message||'Product catalog is unavailable.');});
+    return()=>{cancelled=true};
+  },[page]);
+  // Restore a previous login (Supabase keeps the session in the browser).
+  useEffect(()=>{
+    let cancelled=false;
+    (async()=>{
+      try{
+        if(await getSessionUser()){
+          const existing=await loadMyCustomer();
+          if(existing&&!cancelled){setCustomer(existing);setDraft((current)=>({...current,details:{...current.details,address:existing.address?.street||'',barangay:existing.address?.barangay||'',landmark:existing.address?.landmark||'',name:existing.fullName||'',phone:existing.phone||''}}));}
+        }
+      }catch{/* show the login screen if anything fails */}
+      if(!cancelled)setChecking(false);
+    })();
+    return()=>{cancelled=true};
+  },[]);
+  const onLogout=async()=>{await signOutCustomer();setCustomer(null);setDraft(makeDraft(null,{},products));setOrders(sampleData.orders);setPage('home');setNotice('');scrollTop();};
   const scrollTop=()=>window.scrollTo(0,0);
-  const onOnboard=(next)=>{setCustomer(next);setDraft(makeDraft(next));setPage('home');scrollTop();};
+  const onOnboard=(next)=>{setCustomer(next);setDraft(makeDraft(next,{},products));setPage('home');scrollTop();};
   const goHome=()=>{setPage('home');setNotice('');scrollTop();};
   const goOrders=()=>{setPage('orders');setNotice('');scrollTop();};
   const startOrder=(ownership='own',quantities)=>{
     const ongoing=orders.filter(o=>!['Completed','Cancelled'].includes(o.status));
     setNotice(ongoing.length?'You already have '+ongoing.length+' ongoing order(s). Check My Orders before submitting another request.':'');
-    setDraft({...makeDraft(customer,quantities),ownership,service:ownership==='own'?'pickup-return':'delivery'});
+    setDraft({...makeDraft(customer,quantities,products),ownership,service:ownership==='own'?'pickup-return':'delivery'});
     setStep(1);setPage('order');scrollTop();
   };
   const onReorder=(order)=>{
-    const quantities={round5:0,slim25:0,slim5:0};
+    const quantities=Object.fromEntries(orderOptions(products).map((product)=>[product.id,0]));
     for(const item of order.items) if(Object.hasOwn(quantities,item.sizeId)) quantities[item.sizeId]=item.quantity;
     startOrder('own',quantities);
   };
@@ -54,9 +86,10 @@ export default function CustomerWeb(){
     };
     setOrders(current=>[order,...current]);goOrders();
   };
-  if(!customer) return <CustomerOnboarding sampleCustomer={sampleData.customers[0]} onComplete={onOnboard}/>;
+  if(checking) return <main className="onboarding-shell"><p style={{textAlign:'center',padding:'48px 16px'}}>Loading…</p></main>;
+  if(!customer) return <CustomerOnboarding onComplete={onOnboard}/>;
   return <div id="home" className="customer-site">
-    <NavBarCustomer page={page} onHome={goHome} onOrder={()=>startOrder()} onOrders={goOrders}/>
+    <NavBarCustomer page={page} onHome={goHome} onOrder={()=>startOrder()} onOrders={goOrders} onLogout={onLogout}/>
     <main className="customer-main container-fluid px-3 px-md-4">
       {page==='home' && <>
         <section className="hero-banner" aria-labelledby="hero-title">
@@ -97,12 +130,12 @@ export default function CustomerWeb(){
       </>}
       {page==='order' && <>
         {notice && <div className="order-notice" role="status"><FiMapPin/>{notice}<button type="button" onClick={goOrders}>My Orders</button></div>}
-        {step===1 && <OrderWaterStep1 draft={draft} updateDraft={updateDraft} onNext={()=>moveStep(2)}/>}
+        {step===1 && <OrderWaterStep1 draft={draft} updateDraft={updateDraft} onNext={()=>moveStep(2)} products={products} catalogError={catalogError}/>}
         {step===2 && <OrderDetailsStep2 draft={draft} updateDraft={updateDraft} onBack={()=>moveStep(1)} onNext={()=>moveStep(3)} verifiedPhone={customer.phone}/>}
-        {step===3 && <ReviewOrderStep3 draft={draft} onBack={()=>moveStep(2)} onEditWater={()=>moveStep(1)} onEditDetails={()=>moveStep(2)} onPreview={previewRequest}/>}
+        {step===3 && <ReviewOrderStep3 draft={draft} onBack={()=>moveStep(2)} onEditWater={()=>moveStep(1)} onEditDetails={()=>moveStep(2)} onPreview={previewRequest} products={products}/>}
       </>}
-      {page==='orders' && <MyOrders orders={orders} onBack={goHome} onNewOrder={()=>startOrder()} onReorder={onReorder}/>}
+      {page==='orders' && <MyOrders orders={orders} products={products} onBack={goHome} onNewOrder={()=>startOrder()} onReorder={onReorder}/>}
     </main>
-    <div className="sample-disclosure" style={{padding:'12px',textAlign:'center'}}>UI preview: customer profile, OTP and orders are local sample data; no live backend is connected.</div>
+    <div className="sample-disclosure" style={{padding:'12px',textAlign:'center'}}>Customer login and profile are live (Supabase). Orders are still sample data for now.</div>
   </div>;
 }

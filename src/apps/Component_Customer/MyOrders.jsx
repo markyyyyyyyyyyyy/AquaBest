@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { FiArrowLeft, FiArrowRight, FiCheckCircle, FiClock, FiClipboard, FiTruck, FiRefreshCcw } from 'react-icons/fi';
-import { bottleOptions } from './orderData.js';
+import { orderOptions } from './orderData.js';
 
-function summary(items=[]) { return items.map(({sizeId,quantity}) => { const b=bottleOptions.find(v=>v.id===sizeId); return quantity+' × '+(b?.name||sizeId)+' '+(b?.shape||''); }).join(' · '); }
-export default function MyOrders({ orders=[], onBack, onNewOrder, onReorder }) {
+export default function MyOrders({ orders=[], products=[], onBack, onNewOrder, onReorder }) {
   const [tab,setTab]=useState('ongoing');
   const [expanded,setExpanded]=useState(null);
   const ongoing=orders.filter(o=>!['Completed','Cancelled'].includes(o.status));
@@ -17,7 +16,7 @@ export default function MyOrders({ orders=[], onBack, onNewOrder, onReorder }) {
     </div>
     {showing.map(order=><article className="order-panel saved-order-card" key={order.id}>
       <div className="saved-order-head"><strong>Order #{order.id}</strong><span className={'order-status '+(order.status==='Completed'?'completed':'')}>{order.status}</span></div>
-      <p>{summary(order.items)}</p><div className="saved-order-meta"><FiClock /> {order.createdAt} <span>· {order.paymentStatus}</span></div>
+      <p>{order.items?.map(({sizeId,quantity})=>{const product=orderOptions(products).find((item)=>item.id===sizeId);return `${quantity} × ${product?.name||sizeId} ${product?.shape||''}`;}).join(' · ')}</p><div className="saved-order-meta"><FiClock /> {order.createdAt} <span>· {order.paymentStatus}</span></div>
       {tab==='ongoing' && <><button type="button" className="btn order-primary" onClick={()=>setExpanded(expanded===order.id?null:order.id)}><FiTruck /> {expanded===order.id?'Hide Progress':'Track Progress'} <FiArrowRight /></button>
         {expanded===order.id && <div className="progress-detail" aria-label={'Tracking for '+order.id}>
           {['Pending Confirmation','Confirmed','Preparing','Out for Delivery','Delivered'].map((stage,i)=><div className={'progress-point '+((order.currentStep??0)>=i?'complete':'')} key={stage}>{(order.currentStep??0)>=i?<FiCheckCircle/>:<FiClock/>}<span>{stage}</span></div>)}

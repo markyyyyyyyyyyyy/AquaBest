@@ -19,5 +19,6 @@ export const serviceOptions = {
   ],
 };
 export const countBottles = (quantities) => Object.values(quantities).reduce((sum, n) => sum + n, 0);
-export const selectedBottles = (quantities) => bottleOptions.filter((item) => (quantities[item.id] || 0) > 0);
+export const orderOptions = (products=[]) => [...bottleOptions, ...products];
+export const selectedBottles = (quantities, products=[]) => orderOptions(products).filter((item) => (quantities[item.id] || 0) > 0);
 export const isDelivery = (service) => service !== 'walkin';

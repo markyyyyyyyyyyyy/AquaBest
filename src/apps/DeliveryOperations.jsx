@@ -2,12 +2,7 @@ import {useState} from 'react';
 import {FiTruck,FiPackage,FiCreditCard,FiClock,FiCheckCircle,FiArrowRight,FiAlertTriangle,FiMapPin,FiFileText,FiRefreshCcw,FiLogOut,FiDollarSign} from 'react-icons/fi';
 import {formatMoney} from '../data/managerDemo.js';
 
-// Demo fixtures. Source (Online/Phone) is not evidence of payment.
-export const INITIAL_DELIVERY_TRIPS=[
- {id:'TRIP-001',orderId:'AB-1039',customer:'Sarah Lim',address:'Address pending validation',items:'3 × 5 Gallons (Slim)',status:'Out for Delivery',paymentStatus:'Paid',amount:105,driver:'Driver A',expectedBottles:3,bottlesLoaded:3,emptiesCollected:0,collectedCash:0,remittance:'Not required',paymentMethod:'GCash',reference:'DEMO-VERIFIED',notes:'Sample verified prepaid order'},
- {id:'TRIP-002',orderId:'AB-1047',customer:'Demo Customer A',address:'Address pending validation',items:'2 × 5 Gallons (Round)',status:'Assigned',paymentStatus:'Unpaid',amount:70,driver:'Driver A',expectedBottles:2,bottlesLoaded:0,emptiesCollected:0,collectedCash:0,remittance:'Not collected',paymentMethod:'',reference:'',notes:'Customer-owned container delivery'},
- {id:'TRIP-003',orderId:'AB-1048',customer:'Demo Customer B',address:'Address pending validation',items:'1 × 2.5 Gallons (Slim)',status:'Ready for Pickup',paymentStatus:'Unpaid',amount:20,driver:'Driver A',expectedBottles:1,bottlesLoaded:0,emptiesCollected:0,collectedCash:0,remittance:'Not collected',paymentMethod:'',reference:'',notes:'Customer-owned container delivery'}
-];
+export const INITIAL_DELIVERY_TRIPS=[];
 const STEPS=['Assigned','Ready for Pickup','Out for Delivery','Delivered'];
 const terminal=['Delivered','Failed Delivery'];
 function Summary({title,value,Icon}){return <div className="mgmt-stat"><div className="mgmt-stat-top"><span>{title}</span><Icon size={17}/></div><strong>{value}</strong></div>}
@@ -84,6 +79,7 @@ export default function DeliveryOperations({page,go,trips,setTrips,driver='Drive
    <div className="mgmt-section-title"><h2>Quick Actions</h2></div>
    <div className="mgmt-grid"><button className="mgmt-quick" onClick={()=>go('deliveries')}><FiTruck/> My Deliveries</button><button className="mgmt-quick" onClick={()=>go('bottles')}><FiPackage/> Bottle Handling</button><button className="mgmt-quick" onClick={()=>go('collections')}><FiCreditCard/> Collections</button><button className="mgmt-quick" onClick={()=>go('history')}><FiClock/> Trip History</button></div>
    <div className="mgmt-section-title"><h2>Current Trips</h2><button className="mgmt-link" onClick={()=>go('deliveries')}>View All <FiArrowRight/></button></div>{active.map(card)}
+   <div className="mgmt-notice">Working in Progress</div>
   </>}
   {page==='deliveries'&&<><Title tag="Delivery operations" title="My Deliveries" description="Your assigned stops. Confirm delivery and payment together at drop-off."/>
    <div className="mgmt-controls">{['Active','Completed','All'].map(x=><button key={x} className={tab===x?'active':''} onClick={()=>setTab(x)}>{x}</button>)}</div>
