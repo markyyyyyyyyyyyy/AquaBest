@@ -6,7 +6,10 @@ A management system for water stations. Handles station operations, inventory tr
 The customer website is unchanged at the repository's existing URL.
 
 Open the **Manager UI prototype** on GitHub Pages using:
-`https://gian007.github.io/aquabest-system/?view=manager`
+`(https://markyyyyyyyyyyyy.github.io/AquaBest/?view=manager)`
+
+CUSTOMER DASHBOARD:
+https://markyyyyyyyyyyyy.github.io/AquaBest/
 
 Local development:
 ```bash
